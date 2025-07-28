@@ -8,7 +8,10 @@ dotenv.config();
 const app = express();
 connectDB();
 
-app.use(cors());
+app.use(cors({
+  origin: 'https://navajowhite-giraffe-485297.hostingersite.com',
+  credentials: true
+}));
 app.use(express.json());
 // Servir imágenes subidas
 const path = require('path');
