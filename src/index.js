@@ -72,13 +72,36 @@ app.get('/api/test', (req, res) => {
 // Log de debug
 console.log('Configurando rutas...');
 
-// Rutas
-app.use('/api/usuarios', require('./routes/userRoutes'));
-app.use('/api/productos', require('./routes/productRoutes'));
-app.use('/api/pedidos', require('./routes/orderRoutes'));
+// Rutas - Cargar una por una para identificar el problema
+try {
+  console.log('Cargando rutas de usuarios...');
+  app.use('/api/usuarios', require('./routes/userRoutes'));
+  console.log('✅ Rutas de usuarios cargadas');
+} catch (error) {
+  console.error('❌ Error cargando rutas de usuarios:', error);
+  process.exit(1);
+}
+
+try {
+  console.log('Cargando rutas de productos...');
+  app.use('/api/productos', require('./routes/productRoutes'));
+  console.log('✅ Rutas de productos cargadas');
+} catch (error) {
+  console.error('❌ Error cargando rutas de productos:', error);
+  process.exit(1);
+}
+
+try {
+  console.log('Cargando rutas de pedidos...');
+  app.use('/api/pedidos', require('./routes/orderRoutes'));
+  console.log('✅ Rutas de pedidos cargadas');
+} catch (error) {
+  console.error('❌ Error cargando rutas de pedidos:', error);
+  process.exit(1);
+}
 
 // Log de debug
-console.log('Rutas configuradas correctamente');
+console.log('✅ Todas las rutas configuradas correctamente');
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
