@@ -14,6 +14,17 @@ if (missingVars.length > 0) {
   process.exit(1);
 }
 
+// Validar variables de entorno de AWS S3 (opcionales pero recomendadas)
+const awsEnvVars = ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_S3_BUCKET_NAME'];
+const missingAwsVars = awsEnvVars.filter(varName => !process.env[varName]);
+
+if (missingAwsVars.length > 0) {
+  console.warn('⚠️  Variables de entorno de AWS S3 faltantes:', missingAwsVars);
+  console.warn('⚠️  Las imágenes se almacenarán localmente en lugar de S3');
+} else {
+  console.log('✅ Variables de entorno de AWS S3 configuradas');
+}
+
 console.log('✅ Variables de entorno validadas correctamente');
 
 const app = express();
@@ -97,6 +108,15 @@ try {
   console.log('✅ Rutas de pedidos cargadas');
 } catch (error) {
   console.error('❌ Error cargando rutas de pedidos:', error);
+  process.exit(1);
+}
+
+try {
+  console.log('Cargando rutas de prueba...');
+  app.use('/api/test', require('./routes/testRoutes'));
+  console.log('✅ Rutas de prueba cargadas');
+} catch (error) {
+  console.error('❌ Error cargando rutas de prueba:', error);
   process.exit(1);
 }
 
