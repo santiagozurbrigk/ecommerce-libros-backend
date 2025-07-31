@@ -11,6 +11,9 @@ router.post('/login', login);
 // Crear usuario admin (solo para desarrollo)
 router.post('/create-admin', createAdmin);
 
+// Endpoint temporal GET para crear admin (solo para desarrollo)
+router.get('/create-admin', createAdmin);
+
 // Listar usuarios
 router.get('/', getUsers);
 
