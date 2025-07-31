@@ -5,6 +5,17 @@ const connectDB = require('./config/db');
 
 dotenv.config();
 
+// Validar variables de entorno requeridas
+const requiredEnvVars = ['MONGO_URI', 'JWT_SECRET'];
+const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingVars.length > 0) {
+  console.error('❌ Variables de entorno faltantes:', missingVars);
+  process.exit(1);
+}
+
+console.log('✅ Variables de entorno validadas correctamente');
+
 const app = express();
 connectDB();
 
