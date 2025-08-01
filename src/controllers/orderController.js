@@ -66,14 +66,27 @@ exports.getOrders = async (req, res) => {
 // Actualizar estado del pedido
 exports.updateOrderStatus = async (req, res) => {
   try {
+    console.log('Actualizando estado del pedido:', req.params.id, 'a:', req.body.status);
+    
+    // Verificar que el pedido existe
+    const existingOrder = await Order.findById(req.params.id);
+    if (!existingOrder) {
+      console.error('Pedido no encontrado:', req.params.id);
+      return res.status(404).json({ msg: 'Pedido no encontrado' });
+    }
+    
     const order = await Order.findByIdAndUpdate(
       req.params.id,
       { status: req.body.status },
       { new: true }
     ).populate('user', 'nombre email');
     
+    console.log('Pedido actualizado exitosamente:', order._id);
+    
     // Enviar email solo si el estado es 'listo para retirar' y el transporter está configurado
     if (order.status === 'listo para retirar' && order.user?.email && transporter) {
+      console.log('Enviando email de notificación a:', order.user.email);
+      
       const mailOptions = {
         from: process.env.BREVO_USER,
         to: order.user.email,
@@ -83,8 +96,19 @@ exports.updateOrderStatus = async (req, res) => {
           <p><b>ID de pedido:</b> #${order._id.slice(-4)}</p>
           <p>Si tienes dudas, responde a este email.</p>`
       };
+      
       transporter.sendMail(mailOptions, (err, info) => {
-        if (err) console.error('Error enviando email:', err);
+        if (err) {
+          console.error('Error enviando email:', err);
+        } else {
+          console.log('Email enviado exitosamente:', info.messageId);
+        }
+      });
+    } else {
+      console.log('No se enviará email - Condiciones no cumplidas:', {
+        status: order.status,
+        hasEmail: !!order.user?.email,
+        hasTransporter: !!transporter
       });
     }
     
