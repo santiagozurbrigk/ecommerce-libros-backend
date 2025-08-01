@@ -3,23 +3,28 @@ const User = require('../models/User');
 const nodemailer = require('nodemailer');
 
 // Configuración de nodemailer con SMTP de Brevo
-const transporter = nodemailer.createTransport({
-  host: 'smtp-relay.brevo.com',
-  port: 587,
-  auth: {
-    user: process.env.BREVO_USER, // tu email de Brevo
-    pass: process.env.BREVO_API_KEY, // tu API Key SMTP
-  },
-});
+let transporter = null;
+
+// Solo crear el transporter si las variables de entorno están configuradas
+if (process.env.BREVO_USER && process.env.BREVO_API_KEY) {
+  transporter = nodemailer.createTransporter({
+    host: 'smtp-relay.brevo.com',
+    port: 587,
+    auth: {
+      user: process.env.BREVO_USER,
+      pass: process.env.BREVO_API_KEY,
+    },
+  });
+}
 
 // Crear pedido
 exports.createOrder = async (req, res) => {
   try {
     const order = new Order(req.body);
     await order.save();
-    // Enviar email de confirmación
+    // Enviar email de confirmación solo si el transporter está configurado
     const userEmail = req.body.email || (req.user && req.user.email);
-    if (userEmail) {
+    if (userEmail && transporter) {
       const mailOptions = {
         from: process.env.BREVO_USER,
         to: userEmail,
@@ -66,8 +71,9 @@ exports.updateOrderStatus = async (req, res) => {
       { status: req.body.status },
       { new: true }
     ).populate('user', 'nombre email');
-    // Enviar email solo si el estado es 'listo para retirar'
-    if (order.status === 'listo para retirar' && order.user?.email) {
+    
+    // Enviar email solo si el estado es 'listo para retirar' y el transporter está configurado
+    if (order.status === 'listo para retirar' && order.user?.email && transporter) {
       const mailOptions = {
         from: process.env.BREVO_USER,
         to: order.user.email,
@@ -81,9 +87,11 @@ exports.updateOrderStatus = async (req, res) => {
         if (err) console.error('Error enviando email:', err);
       });
     }
+    
     res.json(order);
   } catch (error) {
-    res.status(500).json({ msg: 'Error al actualizar estado', error });
+    console.error('Error al actualizar estado del pedido:', error);
+    res.status(500).json({ msg: 'Error al actualizar estado del pedido' });
   }
 };
 
