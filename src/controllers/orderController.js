@@ -32,6 +32,7 @@ exports.createOrder = async (req, res) => {
         html: `<h2>¡Gracias por tu pedido!</h2>
           <p>Hemos recibido tu pedido y lo estamos procesando.</p>
           <p><b>Total:</b> $${order.total}</p>
+          <p><b>ID de pedido:</b> #${order._id.toString().slice(-4)}</p>
           <p>Te avisaremos cuando esté listo para retirar.</p>
           <p>Si tienes dudas, responde a este email.</p>`
       };
@@ -93,7 +94,7 @@ exports.updateOrderStatus = async (req, res) => {
         subject: '¡Tu pedido está listo para retirar! - Impresiones Low Cost',
         html: `<h2>¡Tu pedido ya está listo para retirar!</h2>
           <p>Puedes pasar a buscarlo por el local cuando quieras.</p>
-          <p><b>ID de pedido:</b> #${order._id.slice(-4)}</p>
+          <p><b>ID de pedido:</b> #${order._id.toString().slice(-4)}</p>
           <p>Si tienes dudas, responde a este email.</p>`
       };
       
