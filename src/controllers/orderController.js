@@ -7,7 +7,7 @@ let transporter = null;
 
 // Solo crear el transporter si las variables de entorno están configuradas
 if (process.env.BREVO_USER && process.env.BREVO_API_KEY) {
-  transporter = nodemailer.createTransporter({
+  transporter = nodemailer.createTransport({
     host: 'smtp-relay.brevo.com',
     port: 587,
     auth: {
