@@ -1,3 +1,5 @@
+// IMPLEMENTACIÓN DE MERCADO PAGO - DESHABILITADA TEMPORALMENTE
+/*
 const mercadopago = require('mercadopago');
 
 // Configurar Mercado Pago
@@ -57,6 +59,26 @@ const processWebhook = async (data) => {
     console.error('❌ Error al procesar webhook:', error.message);
     throw error;
   }
+};
+
+module.exports = {
+  configureMercadoPago,
+  createPaymentPreference,
+  processWebhook
+};
+*/
+
+// Placeholder para evitar errores de importación
+const configureMercadoPago = () => {
+  console.log('ℹ️  Mercado Pago deshabilitado temporalmente');
+};
+
+const createPaymentPreference = async () => {
+  throw new Error('Mercado Pago no está configurado');
+};
+
+const processWebhook = async () => {
+  throw new Error('Mercado Pago no está configurado');
 };
 
 module.exports = {

@@ -1,3 +1,5 @@
+// CONTROLADOR DE PAGOS - DESHABILITADO TEMPORALMENTE
+/*
 const { createPaymentPreference, processWebhook } = require('../config/mercadopago');
 const Order = require('../models/Order');
 
@@ -116,6 +118,26 @@ const getPaymentStatus = async (req, res) => {
     console.error('❌ Error al obtener estado del pago:', error);
     res.status(500).json({ msg: 'Error al obtener estado del pago' });
   }
+};
+
+module.exports = {
+  createPayment,
+  webhook,
+  getPaymentStatus
+};
+*/
+
+// Placeholder para evitar errores de importación
+const createPayment = async (req, res) => {
+  res.status(501).json({ msg: 'Mercado Pago no está configurado' });
+};
+
+const webhook = async (req, res) => {
+  res.status(501).json({ msg: 'Mercado Pago no está configurado' });
+};
+
+const getPaymentStatus = async (req, res) => {
+  res.status(501).json({ msg: 'Mercado Pago no está configurado' });
 };
 
 module.exports = {

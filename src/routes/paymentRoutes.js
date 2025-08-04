@@ -1,3 +1,5 @@
+// RUTAS DE PAGOS - DESHABILITADAS TEMPORALMENTE
+/*
 const express = require('express');
 const router = express.Router();
 const paymentController = require('../controllers/paymentController');
@@ -11,5 +13,16 @@ router.get('/webhook', paymentController.webhook);
 
 // Obtener estado del pago (requiere autenticación)
 router.get('/status/:paymentId', auth, paymentController.getPaymentStatus);
+
+module.exports = router;
+*/
+
+// Placeholder para evitar errores de importación
+const express = require('express');
+const router = express.Router();
+
+router.all('*', (req, res) => {
+  res.status(501).json({ msg: 'Mercado Pago no está configurado' });
+});
 
 module.exports = router; 

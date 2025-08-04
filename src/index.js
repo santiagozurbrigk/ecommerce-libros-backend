@@ -42,7 +42,8 @@ if (missingAwsVars.length > 0) {
   console.log('✅ Variables de entorno de AWS S3 configuradas');
 }
 
-// Validar variables de entorno de Mercado Pago (opcionales)
+// Validar variables de entorno de Mercado Pago (opcionales) - DESHABILITADO
+/*
 const mpEnvVars = ['MERCADOPAGO_ACCESS_TOKEN'];
 const missingMpVars = mpEnvVars.filter(varName => !process.env[varName]);
 
@@ -52,17 +53,20 @@ if (missingMpVars.length > 0) {
 } else {
   console.log('✅ Variables de entorno de Mercado Pago configuradas');
 }
+*/
 
 console.log('✅ Variables de entorno validadas correctamente');
 
 const app = express();
 connectDB();
 
-// Configurar Mercado Pago si las credenciales están disponibles
+// Configurar Mercado Pago si las credenciales están disponibles - DESHABILITADO
+/*
 if (process.env.MERCADOPAGO_ACCESS_TOKEN) {
   const { configureMercadoPago } = require('./config/mercadopago');
   configureMercadoPago();
 }
+*/
 
 // 🔒 CONFIGURACIÓN DE SEGURIDAD
 
@@ -197,6 +201,8 @@ try {
   process.exit(1);
 }
 
+// Rutas de pagos - DESHABILITADAS TEMPORALMENTE
+/*
 try {
   console.log('Cargando rutas de pagos...');
   app.use('/api/payments', require('./routes/paymentRoutes'));
@@ -205,6 +211,7 @@ try {
   console.error('❌ Error cargando rutas de pagos:', error);
   process.exit(1);
 }
+*/
 
 // Log de debug
 console.log('✅ Todas las rutas configuradas correctamente');
@@ -234,4 +241,5 @@ app.listen(PORT, () => {
   console.log('- POST /api/usuarios/create-admin');
   console.log('🔒 Seguridad: Configurada y activa');
   console.log('🛡️  Manejo de errores: Configurado');
+  console.log('💳 Mercado Pago: Deshabilitado temporalmente');
 });

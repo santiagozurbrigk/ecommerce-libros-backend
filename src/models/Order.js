@@ -26,22 +26,8 @@ const orderSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pendiente', 'en proceso', 'listo para retirar', 'entregado', 'cancelado'],
+    enum: ['pendiente', 'en proceso', 'listo para retirar', 'entregado'],
     default: 'pendiente',
-  },
-  paymentStatus: {
-    type: String,
-    enum: ['pending', 'approved', 'rejected', 'in_process', 'cancelled'],
-    default: 'pending',
-  },
-  paymentId: {
-    type: String,
-    required: false,
-  },
-  paymentMethod: {
-    type: String,
-    enum: ['mercadopago', 'efectivo'],
-    default: 'mercadopago',
   },
   createdAt: {
     type: Date,
