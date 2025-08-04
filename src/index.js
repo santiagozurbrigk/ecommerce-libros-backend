@@ -155,6 +155,47 @@ app.get('/api/test', (req, res) => {
   });
 });
 
+// Ruta raíz - Documentación de la API
+app.get('/', (req, res) => {
+  res.json({
+    message: '🚀 API de Impresiones Low Cost',
+    version: '1.0.0',
+    status: 'Activo',
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      auth: {
+        register: 'POST /api/usuarios/register',
+        login: 'POST /api/usuarios/login',
+        createAdmin: 'POST /api/usuarios/create-admin'
+      },
+      products: {
+        getAll: 'GET /api/productos',
+        getById: 'GET /api/productos/:id',
+        create: 'POST /api/productos (admin)',
+        update: 'PUT /api/productos/:id (admin)',
+        delete: 'DELETE /api/productos/:id (admin)'
+      },
+      orders: {
+        create: 'POST /api/pedidos',
+        getUserOrders: 'GET /api/pedidos',
+        getAllOrders: 'GET /api/pedidos (admin)',
+        updateStatus: 'PUT /api/pedidos/:id/status (admin)',
+        getStats: 'GET /api/pedidos/stats (admin)'
+      },
+      test: 'GET /api/test'
+    },
+    security: {
+      rateLimiting: 'Activo',
+      cors: 'Configurado',
+      helmet: 'Activo',
+      xssProtection: 'Activo',
+      mongoSanitize: 'Activo'
+    },
+    mercadoPago: 'Deshabilitado temporalmente',
+    documentation: 'Consulta los endpoints para más información'
+  });
+});
+
 // Log de debug
 console.log('Configurando rutas...');
 

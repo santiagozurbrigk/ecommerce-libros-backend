@@ -117,9 +117,52 @@ const errorHandler = (err, req, res, next) => {
 
 // Middleware para manejar rutas no encontradas
 const notFound = (req, res, next) => {
-  const error = new Error(`Ruta no encontrada: ${req.originalUrl}`);
-  error.statusCode = 404;
-  next(error);
+  // No generar error para rutas no encontradas, solo responder con 404
+  if (req.path === '/favicon.ico') {
+    return res.status(204).end(); // No content para favicon
+  }
+  
+  // Para rutas de API, devolver JSON
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({
+      success: false,
+      error: 'Endpoint no encontrado',
+      path: req.path,
+      method: req.method,
+      availableEndpoints: [
+        'POST /api/usuarios/register',
+        'POST /api/usuarios/login',
+        'GET /api/productos',
+        'POST /api/pedidos',
+        'GET /api/test'
+      ]
+    });
+  }
+  
+  // Para otras rutas, devolver HTML simple
+  res.status(404).send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>404 - Página no encontrada</title>
+      <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        h1 { color: #e74c3c; }
+        .api-link { color: #3498db; text-decoration: none; }
+        .api-link:hover { text-decoration: underline; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>404 - Página no encontrada</h1>
+        <p>La ruta <strong>${req.path}</strong> no existe en este servidor.</p>
+        <p>Este es un servidor de API. Para ver la documentación de la API, visita:</p>
+        <a href="/" class="api-link">📚 Documentación de la API</a>
+      </div>
+    </body>
+    </html>
+  `);
 };
 
 // Middleware para manejar errores asíncronos
