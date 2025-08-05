@@ -82,7 +82,7 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
   'https://navajowhite-giraffe-485297.hostingersite.com',
-  'https://tu-dominio-frontend.com' // Agregar tu dominio de producción
+  'https://backend-libros-ox7x.onrender.com'
 ];
 
 app.use(cors({
@@ -97,7 +97,9 @@ app.use(cors({
       callback(new Error('No permitido por CORS'));
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 // Rate limiting general
