@@ -87,9 +87,16 @@ const configureHPP = () => {
 const validateContentType = (req, res, next) => {
   if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
     const contentType = req.headers['content-type'];
-    if (!contentType || !contentType.includes('application/json')) {
+    if (!contentType) {
       return res.status(400).json({
-        error: 'Content-Type debe ser application/json'
+        error: 'Content-Type es requerido'
+      });
+    }
+    
+    // Permitir application/json y multipart/form-data
+    if (!contentType.includes('application/json') && !contentType.includes('multipart/form-data')) {
+      return res.status(400).json({
+        error: 'Content-Type debe ser application/json o multipart/form-data'
       });
     }
   }

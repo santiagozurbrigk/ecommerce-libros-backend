@@ -78,29 +78,15 @@ app.use(preventMimeSniffing);
 app.use(setReferrerPolicy);
 
 // Configurar CORS
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'https://navajowhite-giraffe-485297.hostingersite.com',
-  'https://backend-libros-ox7x.onrender.com'
-];
-
 app.use(cors({
-  origin: function (origin, callback) {
-    // Permitir requests sin origin (como mobile apps o Postman)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      console.log('❌ CORS bloqueado para:', origin);
-      callback(new Error('No permitido por CORS'));
-    }
-  },
+  origin: 'https://navajowhite-giraffe-485297.hostingersite.com',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
+
+// Middleware para manejar preflight requests
+app.options('*', cors());
 
 // Rate limiting general
 app.use(createRateLimit());
