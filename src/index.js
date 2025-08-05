@@ -5,7 +5,7 @@ const connectDB = require('./config/db');
 
 // Importar middlewares de seguridad
 const {
-  configureRateLimit,
+  createRateLimit,
   configureHelmet,
   configureMongoSanitize,
   configureXSS,
@@ -101,16 +101,16 @@ app.use(cors({
 }));
 
 // Rate limiting general
-app.use(configureRateLimit());
+app.use(createRateLimit());
 
 // Rate limiting específico para login y registro
-const loginRateLimit = configureRateLimit({
+const loginRateLimit = createRateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 5, // máximo 5 intentos
   message: 'Demasiados intentos de login, intenta de nuevo en 15 minutos'
 });
 
-const registerRateLimit = configureRateLimit({
+const registerRateLimit = createRateLimit({
   windowMs: 60 * 60 * 1000, // 1 hora
   max: 3, // máximo 3 registros
   message: 'Demasiados intentos de registro, intenta de nuevo en 1 hora'
