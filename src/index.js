@@ -5,6 +5,7 @@ const connectDB = require('./config/db');
 
 // Importar middlewares de seguridad
 const {
+  configureRateLimit,
   configureHelmet,
   configureMongoSanitize,
   configureXSS,
@@ -14,11 +15,10 @@ const {
   securityLogger,
   preventClickjacking,
   preventMimeSniffing,
-  setReferrerPolicy,
-  loginRateLimit,
-  registerRateLimit,
-  createRateLimit
+  setReferrerPolicy
 } = require('./middlewares/security');
+
+const { notFound, errorHandler } = require('./middlewares/errorHandler');
 
 dotenv.config();
 
@@ -58,82 +58,67 @@ if (missingMpVars.length > 0) {
 console.log('✅ Variables de entorno validadas correctamente');
 
 const app = express();
+
+// Configurar trust proxy para Render.com
+app.set('trust proxy', 1);
+
+// Conectar a la base de datos
 connectDB();
 
-// Configurar Mercado Pago si las credenciales están disponibles - DESHABILITADO
-/*
-if (process.env.MERCADOPAGO_ACCESS_TOKEN) {
-  const { configureMercadoPago } = require('./config/mercadopago');
-  configureMercadoPago();
-}
-*/
-
-// 🔒 CONFIGURACIÓN DE SEGURIDAD
-
-// 1. Helmet - Headers de seguridad
+// Middlewares de seguridad
 app.use(configureHelmet());
-
-// 2. Prevenir clickjacking
+app.use(configureMongoSanitize());
+app.use(configureXSS());
+app.use(configureHPP());
+app.use(validateContentType);
+app.use(validatePayloadSize);
+app.use(securityLogger);
 app.use(preventClickjacking);
-
-// 3. Prevenir MIME type sniffing
 app.use(preventMimeSniffing);
-
-// 4. Configurar referrer policy
 app.use(setReferrerPolicy);
 
-// 5. Sanitizar datos de MongoDB
-app.use(configureMongoSanitize());
+// Configurar CORS
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://navajowhite-giraffe-485297.hostingersite.com',
+  'https://tu-dominio-frontend.com' // Agregar tu dominio de producción
+];
 
-// 6. Prevenir XSS
-app.use(configureXSS());
-
-// 7. Prevenir HTTP Parameter Pollution
-app.use(configureHPP());
-
-// 8. Validar tamaño de payload
-app.use(validatePayloadSize);
-
-// 9. Logging de seguridad
-app.use(securityLogger);
-
-// Configuración de CORS más robusta
 app.use(cors({
   origin: function (origin, callback) {
     // Permitir requests sin origin (como mobile apps o Postman)
     if (!origin) return callback(null, true);
     
-    const allowedOrigins = [
-      'https://navajowhite-giraffe-485297.hostingersite.com',
-      'http://localhost:5173',
-      'http://localhost:3000'
-    ];
-    
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      console.log('🚨 Origin bloqueado por CORS:', origin);
+      console.log('❌ CORS bloqueado para:', origin);
       callback(new Error('No permitido por CORS'));
     }
   },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-  exposedHeaders: ['Content-Length', 'Content-Type'],
-  preflightContinue: false,
-  optionsSuccessStatus: 204
+  credentials: true
 }));
 
-// Middleware para manejar preflight requests
-app.options('*', cors());
-
-// Validar Content-Type para requests que envían datos
-app.use(validateContentType);
-
 // Rate limiting general
-app.use(createRateLimit(15 * 60 * 1000, 100)); // 100 requests por 15 minutos
+app.use(configureRateLimit());
 
-app.use(express.json({ limit: '1mb' })); // Limitar tamaño de JSON
+// Rate limiting específico para login y registro
+const loginRateLimit = configureRateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 5, // máximo 5 intentos
+  message: 'Demasiados intentos de login, intenta de nuevo en 15 minutos'
+});
+
+const registerRateLimit = configureRateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 3, // máximo 3 registros
+  message: 'Demasiados intentos de registro, intenta de nuevo en 1 hora'
+});
+
+// Middleware para parsear JSON
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Middleware para logging de requests (debug)
 app.use((req, res, next) => {
@@ -144,16 +129,6 @@ app.use((req, res, next) => {
 // Servir imágenes subidas
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-
-// Endpoint de prueba
-app.get('/api/test', (req, res) => {
-  res.json({ 
-    message: 'Backend funcionando correctamente',
-    timestamp: new Date().toISOString(),
-    cors: 'Configurado correctamente',
-    security: 'Medidas de seguridad implementadas'
-  });
-});
 
 // Ruta raíz - Documentación de la API
 app.get('/', (req, res) => {
@@ -197,91 +172,50 @@ app.get('/', (req, res) => {
   });
 });
 
-// Log de debug
-console.log('Configurando rutas...');
+// Ruta de test para health check
+app.get('/api/test', (req, res) => {
+  res.json({
+    message: 'Backend funcionando correctamente',
+    timestamp: new Date().toISOString(),
+    cors: 'Configurado correctamente',
+    security: 'Medidas de seguridad implementadas',
+    categories: ['escolares', 'ingles']
+  });
+});
 
-// Rutas - Cargar una por una para identificar el problema
-try {
-  console.log('Cargando rutas de usuarios...');
-  const userRoutes = require('./routes/userRoutes');
-  
-  // Aplicar rate limiting específico a rutas sensibles
-  app.use('/api/usuarios/login', loginRateLimit);
-  app.use('/api/usuarios/register', registerRateLimit);
-  
-  app.use('/api/usuarios', userRoutes);
-  console.log('✅ Rutas de usuarios cargadas');
-} catch (error) {
-  console.error('❌ Error cargando rutas de usuarios:', error);
-  process.exit(1);
-}
+// Rutas de usuarios
+app.use('/api/usuarios', require('./routes/userRoutes'));
 
-try {
-  console.log('Cargando rutas de productos...');
-  app.use('/api/productos', require('./routes/productRoutes'));
-  console.log('✅ Rutas de productos cargadas');
-} catch (error) {
-  console.error('❌ Error cargando rutas de productos:', error);
-  process.exit(1);
-}
+// Rutas de productos
+app.use('/api/productos', require('./routes/productRoutes'));
 
-try {
-  console.log('Cargando rutas de pedidos...');
-  app.use('/api/pedidos', require('./routes/orderRoutes'));
-  console.log('✅ Rutas de pedidos cargadas');
-} catch (error) {
-  console.error('❌ Error cargando rutas de pedidos:', error);
-  process.exit(1);
-}
+// Rutas de pedidos
+app.use('/api/pedidos', require('./routes/orderRoutes'));
 
-try {
-  console.log('Cargando rutas de prueba...');
-  app.use('/api/test', require('./routes/testRoutes'));
-  console.log('✅ Rutas de prueba cargadas');
-} catch (error) {
-  console.error('❌ Error cargando rutas de prueba:', error);
-  process.exit(1);
-}
-
-// Rutas de pagos - DESHABILITADAS TEMPORALMENTE
-/*
-try {
-  console.log('Cargando rutas de pagos...');
-  app.use('/api/payments', require('./routes/paymentRoutes'));
-  console.log('✅ Rutas de pagos cargadas');
-} catch (error) {
-  console.error('❌ Error cargando rutas de pagos:', error);
-  process.exit(1);
-}
-*/
-
-// Log de debug
-console.log('✅ Todas las rutas configuradas correctamente');
-console.log('🔒 Medidas de seguridad implementadas:');
-console.log('  - Helmet (headers de seguridad)');
-console.log('  - Rate limiting');
-console.log('  - Sanitización MongoDB');
-console.log('  - Prevención XSS');
-console.log('  - Prevención HPP');
-console.log('  - Validación de contenido');
-console.log('  - Logging de seguridad');
-
-// Manejo de rutas no encontradas (debe ir antes del error handler)
-const { notFound } = require('./middlewares/errorHandler');
+// Middleware para manejar rutas no encontradas
 app.use(notFound);
 
-// Manejo centralizado de errores (debe ir al final)
-const { errorHandler } = require('./middlewares/errorHandler');
+// Middleware para manejar errores
 app.use(errorHandler);
 
+// Configurar Mercado Pago (comentado temporalmente)
+// if (process.env.MERCADO_PAGO_ACCESS_TOKEN) {
+//   const mercadopago = require('mercadopago');
+//   mercadopago.configure({
+//     access_token: process.env.MERCADO_PAGO_ACCESS_TOKEN
+// });
+//   app.use('/api/payments', require('./routes/paymentRoutes'));
+//   console.log('💳 Mercado Pago: Configurado correctamente');
+// } else {
+//   console.log('💳 Mercado Pago: Deshabilitado temporalmente');
+// }
+
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
-  console.log('📋 Rutas disponibles:');
-  console.log('- POST /api/usuarios/register');
-  console.log('- POST /api/usuarios/login');
-  console.log('- POST /api/usuarios/create-admin');
-  console.log('🔒 Seguridad: Configurada y activa');
-  console.log('🛡️  Manejo de errores: Configurado');
+  console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔒 Seguridad: Rate limiting, CORS, Helmet activos`);
+  console.log(`📊 Categorías: escolares, ingles`);
   console.log('💳 Mercado Pago: Deshabilitado temporalmente');
 });
