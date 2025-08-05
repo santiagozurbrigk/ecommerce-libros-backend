@@ -3,7 +3,7 @@ const router = express.Router();
 const productController = require('../controllers/productController');
 const { getUploadConfig } = require('../config/upload');
 const { validateProduct, handleValidationErrors } = require('../middlewares/validation');
-const { auth } = require('../middlewares/auth');
+const auth = require('../middlewares/auth');
 
 // Obtener la configuración de upload (S3 o local)
 const upload = getUploadConfig();
