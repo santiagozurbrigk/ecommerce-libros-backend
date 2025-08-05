@@ -173,7 +173,8 @@ app.get('/', (req, res) => {
         getById: 'GET /api/productos/:id',
         create: 'POST /api/productos (admin)',
         update: 'PUT /api/productos/:id (admin)',
-        delete: 'DELETE /api/productos/:id (admin)'
+        delete: 'DELETE /api/productos/:id (admin)',
+        categories: ['escolares', 'ingles']
       },
       orders: {
         create: 'POST /api/pedidos',

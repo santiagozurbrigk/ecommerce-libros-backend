@@ -8,7 +8,8 @@
     "dev": "nodemon src/index.js",
     "build": "echo 'Build completado'",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "health-check": "node health-check.js"
+    "health-check": "node health-check.js",
+    "migrate-categories": "node migrate-categories.js"
   },
   "keywords": [],
   "author": "",

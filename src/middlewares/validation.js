@@ -65,8 +65,8 @@ const validateProduct = [
     .withMessage('Las páginas deben ser un número entero positivo'),
   
   body('category')
-    .isIn(['medicina', 'otros'])
-    .withMessage('La categoría debe ser "medicina" u "otros"')
+    .isIn(['escolares', 'ingles'])
+    .withMessage('La categoría debe ser "escolares" o "ingles"')
 ];
 
 // Validación para pedidos
