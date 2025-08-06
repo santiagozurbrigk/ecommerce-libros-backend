@@ -14,6 +14,9 @@ router.post('/', auth, upload.single('image'), validateProduct, handleValidation
 // Listar productos (público)
 router.get('/', productController.getProducts);
 
+// Listar todos los productos para el admin (sin límite)
+router.get('/admin', auth, productController.getAllProductsForAdmin);
+
 // Editar producto (solo admin)
 router.put('/:id', auth, upload.single('image'), validateProduct, handleValidationErrors, productController.updateProduct);
 

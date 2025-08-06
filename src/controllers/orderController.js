@@ -56,7 +56,8 @@ exports.getOrders = async (req, res) => {
     }
     const orders = await Order.find(filter)
       .populate('user', 'nombre email')
-      .populate('products.product', 'name price image');
+      .populate('products.product', 'name price image')
+      .sort({ createdAt: -1 }); // Ordenar por fecha descendente (más recientes primero)
     res.json(orders);
   } catch (error) {
     console.error(error);

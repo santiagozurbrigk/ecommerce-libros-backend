@@ -144,7 +144,8 @@ app.get('/', (req, res) => {
         getUserOrders: 'GET /api/pedidos',
         getAllOrders: 'GET /api/pedidos (admin)',
         updateStatus: 'PUT /api/pedidos/:id/status (admin)',
-        getStats: 'GET /api/pedidos/stats (admin)'
+        getStats: 'GET /api/pedidos/stats (admin)',
+        note: 'Sistema de reservas - pago al retirar'
       },
       test: 'GET /api/test'
     },

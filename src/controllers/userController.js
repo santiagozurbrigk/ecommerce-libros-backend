@@ -5,6 +5,17 @@ const jwt = require('jsonwebtoken');
 exports.register = async (req, res) => {
   const { nombre, email, password, carrera, telefono } = req.body;
   try {
+    // Validar que el teléfono esté presente
+    if (!telefono || !telefono.trim()) {
+      return res.status(400).json({ msg: 'El teléfono es obligatorio.' });
+    }
+
+    // Validar formato del teléfono
+    const phoneRegex = /^\d{7,15}$/;
+    if (!phoneRegex.test(telefono)) {
+      return res.status(400).json({ msg: 'El teléfono debe contener solo números, entre 7 y 15 dígitos.' });
+    }
+
     let user = await User.findOne({ email });
     if (user) {
       return res.status(400).json({ msg: 'Ya existe una cuenta registrada con ese email.' });

@@ -16,20 +16,18 @@ const userSchema = new mongoose.Schema({
   },
   carrera: {
     type: String,
-    required: false,
+    required: false, // Campo para colegio (opcional)
   },
   telefono: {
     type: String,
-    required: false,
+    required: false, // Ahora es obligatorio en el frontend
   },
   isAdmin: {
     type: Boolean,
     default: false,
   },
-  fechaRegistro: {
-    type: Date,
-    default: Date.now,
-  },
+}, {
+  timestamps: true
 });
 
 module.exports = mongoose.model('User', userSchema);

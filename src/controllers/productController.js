@@ -21,7 +21,7 @@ exports.createProduct = async (req, res) => {
   }
 };
 
-// Listar productos
+// Listar productos (con paginación para el frontend)
 exports.getProducts = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -34,6 +34,17 @@ exports.getProducts = async (req, res) => {
     res.json({ products, total });
   } catch (error) {
     console.error('Error al obtener productos:', error);
+    res.status(500).json({ msg: 'No se pudieron obtener los productos. Intenta nuevamente o contacta soporte.' });
+  }
+};
+
+// Listar todos los productos para el admin (sin límite)
+exports.getAllProductsForAdmin = async (req, res) => {
+  try {
+    const products = await Product.find().sort({ createdAt: -1 });
+    res.json({ products });
+  } catch (error) {
+    console.error('Error al obtener productos para admin:', error);
     res.status(500).json({ msg: 'No se pudieron obtener los productos. Intenta nuevamente o contacta soporte.' });
   }
 };
