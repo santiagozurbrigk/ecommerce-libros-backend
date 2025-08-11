@@ -51,11 +51,50 @@ exports.createOrder = async (req, res) => {
 exports.getOrders = async (req, res) => {
   try {
     const filter = {};
+    
+    // Filtro por usuario específico
     if (req.query.userId) {
       filter.user = req.query.userId;
     }
+    
+    // Filtro por búsqueda
+    if (req.query.search) {
+      const searchTerm = req.query.search.trim();
+      
+      // Buscar por ID de pedido (últimos 4 dígitos)
+      if (searchTerm.length <= 4 && /^\d+$/.test(searchTerm)) {
+        // Buscar por los últimos dígitos del ID
+        const orders = await Order.find()
+          .populate('user', 'nombre email telefono')
+          .populate('products.product', 'name price image')
+          .sort({ createdAt: -1 });
+        
+        const filteredOrders = orders.filter(order => 
+          order._id.toString().slice(-searchTerm.length) === searchTerm
+        );
+        return res.json(filteredOrders);
+      }
+      
+      // Buscar por nombre, email o teléfono del usuario
+      const users = await User.find({
+        $or: [
+          { nombre: { $regex: searchTerm, $options: 'i' } },
+          { email: { $regex: searchTerm, $options: 'i' } },
+          { telefono: { $regex: searchTerm, $options: 'i' } }
+        ]
+      });
+      
+      if (users.length > 0) {
+        const userIds = users.map(user => user._id);
+        filter.user = { $in: userIds };
+      } else {
+        // Si no se encontraron usuarios, devolver array vacío
+        return res.json([]);
+      }
+    }
+    
     const orders = await Order.find(filter)
-      .populate('user', 'nombre email')
+      .populate('user', 'nombre email telefono')
       .populate('products.product', 'name price image')
       .sort({ createdAt: -1 }); // Ordenar por fecha descendente (más recientes primero)
     res.json(orders);
