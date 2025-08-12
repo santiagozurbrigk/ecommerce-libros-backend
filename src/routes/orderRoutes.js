@@ -18,6 +18,9 @@ router.get('/estadisticas', orderController.getOrderStats);
 // Actualizar estado del pedido
 router.put('/:id/status', orderController.updateOrderStatus);
 
+// Eliminar pedido
+router.delete('/:id', orderController.deleteOrder);
+
 // Ventas por mes
 router.get('/dashboard/ventas-mes', orderController.getSalesByMonth);
 // Productos más vendidos

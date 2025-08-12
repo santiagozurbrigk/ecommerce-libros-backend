@@ -262,4 +262,26 @@ exports.getMyOrders = async (req, res) => {
   } catch (error) {
     res.status(500).json({ msg: 'Error al obtener tus pedidos', error });
   }
+};
+
+// Eliminar pedido
+exports.deleteOrder = async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    
+    // Verificar que el pedido existe
+    const existingOrder = await Order.findById(orderId);
+    if (!existingOrder) {
+      return res.status(404).json({ msg: 'Pedido no encontrado' });
+    }
+    
+    // Eliminar el pedido
+    await Order.findByIdAndDelete(orderId);
+    
+    console.log('Pedido eliminado exitosamente:', orderId);
+    res.json({ msg: 'Pedido eliminado exitosamente' });
+  } catch (error) {
+    console.error('Error al eliminar pedido:', error);
+    res.status(500).json({ msg: 'Error al eliminar el pedido' });
+  }
 }; 
