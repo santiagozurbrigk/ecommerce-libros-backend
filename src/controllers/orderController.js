@@ -93,10 +93,20 @@ exports.getOrders = async (req, res) => {
       }
     }
     
-    const orders = await Order.find(filter)
+    // Aplicar límite si se especifica
+    let query = Order.find(filter)
       .populate('user', 'nombre email telefono')
       .populate('products.product', 'name price image')
       .sort({ createdAt: -1 }); // Ordenar por fecha descendente (más recientes primero)
+    
+    if (req.query.limit) {
+      const limit = parseInt(req.query.limit);
+      if (limit > 0 && limit <= 10000) { // Límite máximo de 10,000 para evitar sobrecarga
+        query = query.limit(limit);
+      }
+    }
+    
+    const orders = await query;
     res.json(orders);
   } catch (error) {
     console.error(error);
