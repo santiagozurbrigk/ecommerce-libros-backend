@@ -61,16 +61,16 @@ exports.getOrders = async (req, res) => {
     if (req.query.search) {
       const searchTerm = req.query.search.trim();
       
-      // Buscar por ID de pedido (últimos 4 dígitos)
-      if (searchTerm.length <= 4 && /^\d+$/.test(searchTerm)) {
-        // Buscar por los últimos dígitos del ID
+      // Buscar por ID de pedido (últimos 4 caracteres - puede incluir letras y números)
+      if (searchTerm.length <= 4 && /^[a-zA-Z0-9]+$/.test(searchTerm)) {
+        // Buscar por los últimos caracteres del ID - IGNORAR LÍMITE para búsqueda por ID
         const orders = await Order.find()
           .populate('user', 'nombre email telefono')
           .populate('products.product', 'name price image')
           .sort({ createdAt: -1 });
         
         const filteredOrders = orders.filter(order => 
-          order._id.toString().slice(-searchTerm.length) === searchTerm
+          order._id.toString().slice(-searchTerm.length).toLowerCase() === searchTerm.toLowerCase()
         );
         return res.json(filteredOrders);
       }
