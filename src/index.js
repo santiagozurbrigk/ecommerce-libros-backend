@@ -78,8 +78,34 @@ app.use(preventMimeSniffing);
 app.use(setReferrerPolicy);
 
 // Configurar CORS
+const allowedOrigins = [
+  'https://navajowhite-giraffe-485297.hostingersite.com', // Dominio anterior (Hostinger)
+  'https://frontend-libros-two.vercel.app', // Nuevo dominio de Vercel (producción)
+  /^https:\/\/.*\.vercel\.app$/, // Todos los subdominios de Vercel (preview deployments)
+  'http://localhost:5173', // Desarrollo local Vite
+  'http://localhost:3000', // Desarrollo local alternativo
+];
+
 app.use(cors({
-  origin: 'https://navajowhite-giraffe-485297.hostingersite.com',
+  origin: function (origin, callback) {
+    // Permitir requests sin origin (mobile apps, Postman, etc)
+    if (!origin) return callback(null, true);
+    
+    // Verificar si el origin está permitido
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (allowed instanceof RegExp) {
+        return allowed.test(origin);
+      }
+      return allowed === origin;
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.warn(`⚠️  CORS bloqueado para origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
