@@ -17,6 +17,9 @@ router.get('/', productController.getProducts);
 // Listar todos los productos para el admin (sin límite)
 router.get('/admin', auth, productController.getAllProductsForAdmin);
 
+// Obtener producto por ID (público) - debe ir después de /admin para que no lo capture
+router.get('/:id', productController.getProductById);
+
 // Editar producto (solo admin)
 router.put('/:id', auth, upload.single('image'), validateProduct, handleValidationErrors, productController.updateProduct);
 

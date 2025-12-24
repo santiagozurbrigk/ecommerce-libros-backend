@@ -49,6 +49,20 @@ exports.getAllProductsForAdmin = async (req, res) => {
   }
 };
 
+// Obtener producto por ID (público)
+exports.getProductById = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ msg: 'Producto no encontrado' });
+    }
+    res.json(product);
+  } catch (error) {
+    console.error('Error al obtener producto:', error);
+    res.status(500).json({ msg: 'Error al obtener el producto. Intenta nuevamente o contacta soporte.' });
+  }
+};
+
 // Eliminar producto
 exports.deleteProduct = async (req, res) => {
   try {
