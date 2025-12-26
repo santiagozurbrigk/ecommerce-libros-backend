@@ -28,7 +28,21 @@ exports.getProducts = async (req, res) => {
     const limit = parseInt(req.query.limit) || 12;
     const skip = (page - 1) * limit;
     const filter = {};
+    
+    // Filtrar por categoría
     if (req.query.category) filter.category = req.query.category;
+    
+    // Filtrar por búsqueda (busca en nombre y descripción)
+    if (req.query.search && req.query.search.trim()) {
+      const searchTerm = req.query.search.trim();
+      // Usar expresión regular para búsqueda case-insensitive
+      // Buscar en nombre y descripción
+      filter.$or = [
+        { name: { $regex: searchTerm, $options: 'i' } },
+        { description: { $regex: searchTerm, $options: 'i' } }
+      ];
+    }
+    
     const total = await Product.countDocuments(filter);
     const products = await Product.find(filter).skip(skip).limit(limit);
     res.json({ products, total });
