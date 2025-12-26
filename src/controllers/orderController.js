@@ -20,8 +20,32 @@ if (process.env.BREVO_USER && process.env.BREVO_API_KEY) {
 // Crear pedido
 exports.createOrder = async (req, res) => {
   try {
-    const order = new Order(req.body);
+    // Generar orderNumber antes de crear el pedido
+    let orderNumber = null;
+    try {
+      const lastOrder = await Order.findOne({ orderNumber: { $exists: true, $ne: null } })
+        .sort({ orderNumber: -1 })
+        .limit(1)
+        .select('orderNumber');
+      
+      if (lastOrder && lastOrder.orderNumber) {
+        orderNumber = lastOrder.orderNumber + 1;
+      } else {
+        orderNumber = 1000;
+      }
+      console.log('OrderNumber generado en controlador:', orderNumber);
+    } catch (error) {
+      console.error('Error al generar orderNumber:', error);
+      // Fallback: usar timestamp
+      orderNumber = parseInt(String(Date.now()).slice(-6));
+    }
+    
+    // Crear el pedido con el orderNumber
+    const orderData = { ...req.body, orderNumber };
+    const order = new Order(orderData);
+    console.log('Creando pedido con orderNumber:', order.orderNumber);
     await order.save();
+    console.log('Pedido guardado exitosamente, orderNumber:', order.orderNumber);
     // Enviar email de confirmación solo si el transporter está configurado
     const userEmail = req.body.email || (req.user && req.user.email);
     if (userEmail && transporter) {
@@ -32,7 +56,7 @@ exports.createOrder = async (req, res) => {
         html: `<h2>¡Gracias por tu pedido!</h2>
           <p>Hemos recibido tu pedido y lo estamos procesando.</p>
           <p><b>Total:</b> $${order.total}</p>
-          <p><b>ID de pedido:</b> #${order._id.toString().slice(-4)}</p>
+          <p><b>ID de pedido:</b> #${order.orderNumber}</p>
           <p>Te avisaremos cuando esté listo para retirar.</p>
           <p>Si tienes dudas, responde a este email.</p>`
       };
@@ -61,18 +85,14 @@ exports.getOrders = async (req, res) => {
     if (req.query.search) {
       const searchTerm = req.query.search.trim();
       
-      // Buscar por ID de pedido (últimos 4 caracteres - puede incluir letras y números)
-      if (searchTerm.length <= 4 && /^[a-zA-Z0-9]+$/.test(searchTerm)) {
-        // Buscar por los últimos caracteres del ID - IGNORAR LÍMITE para búsqueda por ID
-        const orders = await Order.find()
+      // Buscar por número de pedido (solo números)
+      if (/^\d+$/.test(searchTerm)) {
+        const orderNumber = parseInt(searchTerm);
+        const orders = await Order.find({ orderNumber })
           .populate('user', 'nombre email telefono')
           .populate('products.product', 'name price image')
           .sort({ createdAt: -1 });
-        
-        const filteredOrders = orders.filter(order => 
-          order._id.toString().slice(-searchTerm.length).toLowerCase() === searchTerm.toLowerCase()
-        );
-        return res.json(filteredOrders);
+        return res.json(orders);
       }
       
       // Buscar por nombre, email o teléfono del usuario
@@ -144,7 +164,7 @@ exports.updateOrderStatus = async (req, res) => {
         subject: '¡Tu pedido está listo para retirar! - Impresiones Low Cost',
         html: `<h2>¡Tu pedido ya está listo para retirar!</h2>
           <p>Puedes pasar a buscarlo por el local cuando quieras.</p>
-          <p><b>ID de pedido:</b> #${order._id.toString().slice(-4)}</p>
+          <p><b>ID de pedido:</b> #${order.orderNumber}</p>
           <p>Si tienes dudas, responde a este email.</p>`
       };
       
