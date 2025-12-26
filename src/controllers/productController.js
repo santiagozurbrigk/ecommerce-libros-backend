@@ -30,9 +30,12 @@ exports.getProducts = async (req, res) => {
     const filter = {};
     
     // Filtrar por categoría
-    if (req.query.category) filter.category = req.query.category;
+    if (req.query.category) {
+      filter.category = req.query.category;
+    }
     
     // Filtrar por búsqueda (busca en nombre y descripción)
+    // La búsqueda se combina con AND con la categoría automáticamente en MongoDB
     if (req.query.search && req.query.search.trim()) {
       const searchTerm = req.query.search.trim();
       // Usar expresión regular para búsqueda case-insensitive
@@ -42,6 +45,8 @@ exports.getProducts = async (req, res) => {
         { description: { $regex: searchTerm, $options: 'i' } }
       ];
     }
+    
+    console.log('Filter aplicado:', JSON.stringify(filter, null, 2)); // Debug log
     
     const total = await Product.countDocuments(filter);
     const products = await Product.find(filter).skip(skip).limit(limit);
