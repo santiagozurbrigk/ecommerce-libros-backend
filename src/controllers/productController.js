@@ -29,27 +29,45 @@ exports.getProducts = async (req, res) => {
     const skip = (page - 1) * limit;
     const filter = {};
     
-    // Filtrar por categoría
-    if (req.query.category) {
-      filter.category = req.query.category;
-    }
+    const hasCategory = req.query.category;
+    const hasSearch = req.query.search && req.query.search.trim();
     
-    // Filtrar por búsqueda (busca en nombre y descripción)
-    // La búsqueda se combina con AND con la categoría automáticamente en MongoDB
-    if (req.query.search && req.query.search.trim()) {
+    // Si hay búsqueda Y categoría, usar $and explícitamente
+    if (hasCategory && hasSearch) {
       const searchTerm = req.query.search.trim();
-      // Usar expresión regular para búsqueda case-insensitive
-      // Buscar en nombre y descripción
-      filter.$or = [
-        { name: { $regex: searchTerm, $options: 'i' } },
-        { description: { $regex: searchTerm, $options: 'i' } }
+      filter.$and = [
+        { category: req.query.category },
+        {
+          $or: [
+            { name: { $regex: searchTerm, $options: 'i' } },
+            { description: { $regex: searchTerm, $options: 'i' } }
+          ]
+        }
       ];
+    } else {
+      // Si solo hay categoría
+      if (hasCategory) {
+        filter.category = req.query.category;
+      }
+      
+      // Si solo hay búsqueda
+      if (hasSearch) {
+        const searchTerm = req.query.search.trim();
+        filter.$or = [
+          { name: { $regex: searchTerm, $options: 'i' } },
+          { description: { $regex: searchTerm, $options: 'i' } }
+        ];
+      }
     }
     
-    console.log('Filter aplicado:', JSON.stringify(filter, null, 2)); // Debug log
+    console.log('Query params:', { category: req.query.category, search: req.query.search, page, limit });
+    console.log('Filter aplicado:', JSON.stringify(filter, null, 2));
     
     const total = await Product.countDocuments(filter);
     const products = await Product.find(filter).skip(skip).limit(limit);
+    
+    console.log(`Encontrados ${total} productos, mostrando ${products.length} en página ${page}`);
+    
     res.json({ products, total });
   } catch (error) {
     console.error('Error al obtener productos:', error);
