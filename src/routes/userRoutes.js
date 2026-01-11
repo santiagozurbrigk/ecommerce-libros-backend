@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, createAdmin, getUsers } = require('../controllers/userController');
+const { register, login, createAdmin, createEmpleadoLocal, getUsers } = require('../controllers/userController');
 const { createRateLimit } = require('../middlewares/security');
 
 // Rate limiting específico para login y registro
@@ -18,6 +18,10 @@ router.post('/create-admin', createAdmin);
 
 // Endpoint temporal GET para crear admin (solo para desarrollo)
 router.get('/create-admin', createAdmin);
+
+// Crear usuario empleado local (temporal)
+router.post('/create-empleado-local', createEmpleadoLocal);
+router.get('/create-empleado-local', createEmpleadoLocal);
 
 // Listar usuarios
 router.get('/', getUsers);

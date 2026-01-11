@@ -96,6 +96,43 @@ exports.createAdmin = async (req, res) => {
   }
 };
 
+// Crear usuario empleado local
+exports.createEmpleadoLocal = async (req, res) => {
+  try {
+    const email = 'empleadolocal@gmail.com';
+    const password = 'localimpresioneslowcost';
+    
+    // Verificar si ya existe
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      // Si existe, actualizar la contraseña
+      const salt = await bcrypt.genSalt(10);
+      existingUser.password = await bcrypt.hash(password, salt);
+      await existingUser.save();
+      return res.json({ msg: 'Usuario empleado local actualizado exitosamente' });
+    }
+
+    // Crear nuevo usuario empleado
+    const empleadoUser = new User({
+      nombre: 'Empleado Local',
+      email: email,
+      password: password,
+      carrera: 'Empleado',
+      telefono: '0000000000',
+      isAdmin: true // Dar permisos de admin
+    });
+
+    const salt = await bcrypt.genSalt(10);
+    empleadoUser.password = await bcrypt.hash(password, salt);
+    await empleadoUser.save();
+
+    res.json({ msg: 'Usuario empleado local creado exitosamente' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: 'Error al crear usuario empleado local' });
+  }
+};
+
 // Listar usuarios con búsqueda avanzada
 exports.getUsers = async (req, res) => {
   try {
