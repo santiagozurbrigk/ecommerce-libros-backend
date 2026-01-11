@@ -51,7 +51,7 @@ exports.login = async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ msg: 'El email o la contraseña son incorrectos.' });
     }
-    const payload = { user: { id: user.id, isAdmin: user.isAdmin, nombre: user.nombre, email: user.email } };
+    const payload = { user: { id: user.id, isAdmin: user.isAdmin, role: user.role || (user.isAdmin ? 'admin' : 'empleado'), nombre: user.nombre, email: user.email } };
     jwt.sign(
       payload,
       process.env.JWT_SECRET,
@@ -82,7 +82,8 @@ exports.createAdmin = async (req, res) => {
       email: 'dzurbrigkimprenta@gmail.com',
       password: 'AdministracionImprenta2025',
       carrera: 'Administración',
-      isAdmin: true
+      isAdmin: true,
+      role: 'admin'
     });
 
     const salt = await bcrypt.genSalt(10);
@@ -119,7 +120,8 @@ exports.createEmpleadoLocal = async (req, res) => {
       password: password,
       carrera: 'Empleado',
       telefono: '0000000000',
-      isAdmin: true // Dar permisos de admin
+      isAdmin: true, // Mantener isAdmin para acceso al panel
+      role: 'empleado' // Pero con rol de empleado para restricciones
     });
 
     const salt = await bcrypt.genSalt(10);
