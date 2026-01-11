@@ -106,9 +106,11 @@ exports.createEmpleadoLocal = async (req, res) => {
     // Verificar si ya existe
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      // Si existe, actualizar la contraseña
+      // Si existe, actualizar la contraseña y el role
       const salt = await bcrypt.genSalt(10);
       existingUser.password = await bcrypt.hash(password, salt);
+      existingUser.role = 'empleado';
+      existingUser.isAdmin = true; // Mantener acceso al panel
       await existingUser.save();
       return res.json({ msg: 'Usuario empleado local actualizado exitosamente' });
     }
