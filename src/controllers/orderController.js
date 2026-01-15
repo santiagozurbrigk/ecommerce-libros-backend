@@ -285,12 +285,45 @@ exports.getTopProducts = async (req, res) => {
 // Obtener pedidos del usuario autenticado
 exports.getMyOrders = async (req, res) => {
   try {
+    // Validar que req.user existe y tiene id
+    if (!req.user || !req.user.id) {
+      console.error('getMyOrders: req.user o req.user.id no existe', { user: req.user });
+      return res.status(401).json({ msg: 'Usuario no autenticado correctamente' });
+    }
+    
     const userId = req.user.id;
+    
+    // Buscar pedidos del usuario con populate que maneja productos eliminados
     const orders = await Order.find({ user: userId })
-      .populate('products.product', 'name price image');
-    res.json(orders);
+      .populate({
+        path: 'products.product',
+        select: 'name price image',
+        // Si el producto fue eliminado, populate retornará null
+        // Usar justOne: false para manejar arrays correctamente
+        justOne: false
+      })
+      .sort({ createdAt: -1 });
+    
+    // Limpiar productos eliminados (donde populate retornó null) y convertir a objetos planos
+    const cleanedOrders = orders.map(order => {
+      const orderObj = order.toObject ? order.toObject() : order;
+      
+      // Si el pedido tiene productos, filtrar los que fueron eliminados
+      if (orderObj.products && Array.isArray(orderObj.products)) {
+        orderObj.products = orderObj.products.filter(item => {
+          // Mantener el producto si existe y tiene datos válidos
+          return item.product && item.product._id;
+        });
+      }
+      
+      return orderObj;
+    });
+    
+    res.json(cleanedOrders);
   } catch (error) {
-    res.status(500).json({ msg: 'Error al obtener tus pedidos', error });
+    console.error('Error en getMyOrders:', error);
+    // No exponer detalles del error en producción, pero loguear para debugging
+    res.status(500).json({ msg: 'Error al obtener tus pedidos. Por favor, intenta nuevamente o contacta soporte.' });
   }
 };
 
