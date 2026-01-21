@@ -15,11 +15,11 @@ router.get('/mis-pedidos', auth, orderController.getMyOrders);
 // Estadísticas de pedidos
 router.get('/estadisticas', orderController.getOrderStats);
 
+// Actualizar estado de múltiples pedidos (DEBE estar ANTES de /:id/status)
+router.put('/bulk/status', auth, orderController.updateMultipleOrderStatus);
+
 // Actualizar estado del pedido
 router.put('/:id/status', orderController.updateOrderStatus);
-
-// Actualizar estado de múltiples pedidos
-router.put('/bulk/status', auth, orderController.updateMultipleOrderStatus);
 
 // Eliminar pedido
 router.delete('/:id', orderController.deleteOrder);
