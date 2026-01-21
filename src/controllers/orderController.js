@@ -190,6 +190,75 @@ exports.updateOrderStatus = async (req, res) => {
   }
 };
 
+// Actualizar estado de múltiples pedidos
+exports.updateMultipleOrderStatus = async (req, res) => {
+  try {
+    const { orderIds, status } = req.body;
+    
+    // Validar que se proporcionaron los datos necesarios
+    if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+      return res.status(400).json({ msg: 'Debe proporcionar un array de IDs de pedidos' });
+    }
+    
+    if (!status || !['pendiente', 'en proceso', 'listo para retirar', 'entregado'].includes(status)) {
+      return res.status(400).json({ msg: 'Estado inválido' });
+    }
+    
+    console.log(`Actualizando estado de ${orderIds.length} pedidos a: ${status}`);
+    
+    // Actualizar todos los pedidos
+    const result = await Order.updateMany(
+      { _id: { $in: orderIds } },
+      { $set: { status } }
+    );
+    
+    console.log(`Pedidos actualizados: ${result.modifiedCount} de ${orderIds.length}`);
+    
+    // Si el estado es 'listo para retirar', enviar emails a los usuarios
+    if (status === 'listo para retirar' && transporter) {
+      const orders = await Order.find({ _id: { $in: orderIds } })
+        .populate('user', 'email nombre');
+      
+      orders.forEach(order => {
+        if (order.user?.email) {
+          const mailOptions = {
+            from: process.env.BREVO_USER,
+            to: order.user.email,
+            subject: '¡Tu pedido está listo para retirar! - Impresiones Low Cost',
+            html: `<h2>¡Tu pedido ya está listo para retirar!</h2>
+              <p>Puedes pasar a buscarlo por el local cuando quieras.</p>
+              <p><b>ID de pedido:</b> #${order.orderNumber}</p>
+              <p>Si tienes dudas, responde a este email.</p>`
+          };
+          
+          transporter.sendMail(mailOptions, (err) => {
+            if (err) {
+              console.error(`Error enviando email a ${order.user.email}:`, err);
+            } else {
+              console.log(`Email enviado exitosamente a ${order.user.email}`);
+            }
+          });
+        }
+      });
+    }
+    
+    // Obtener los pedidos actualizados para devolverlos
+    const updatedOrders = await Order.find({ _id: { $in: orderIds } })
+      .populate('user', 'nombre email telefono')
+      .populate('products.product', 'name price image')
+      .sort({ createdAt: -1 });
+    
+    res.json({
+      msg: `Se actualizaron ${result.modifiedCount} pedido${result.modifiedCount !== 1 ? 's' : ''}`,
+      updatedCount: result.modifiedCount,
+      orders: updatedOrders
+    });
+  } catch (error) {
+    console.error('Error al actualizar múltiples pedidos:', error);
+    res.status(500).json({ msg: 'Error al actualizar los estados de los pedidos' });
+  }
+};
+
 // Estadísticas de pedidos
 exports.getOrderStats = async (req, res) => {
   try {

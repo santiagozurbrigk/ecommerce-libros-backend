@@ -18,6 +18,9 @@ router.get('/estadisticas', orderController.getOrderStats);
 // Actualizar estado del pedido
 router.put('/:id/status', orderController.updateOrderStatus);
 
+// Actualizar estado de múltiples pedidos
+router.put('/bulk/status', auth, orderController.updateMultipleOrderStatus);
+
 // Eliminar pedido
 router.delete('/:id', orderController.deleteOrder);
 
