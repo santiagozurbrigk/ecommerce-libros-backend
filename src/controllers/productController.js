@@ -8,12 +8,39 @@ exports.createProduct = async (req, res) => {
     // Determinar la URL de la imagen según el tipo de almacenamiento
     let image = '';
     if (req.file) {
-      // Si req.file.location existe, es S3; si no, es almacenamiento local
-      image = req.file.location || `/uploads/${req.file.filename}`;
+      // Si req.file.location existe, es S3 (multer-s3 con AWS SDK v2)
+      // Si req.file.key existe pero no location, construir URL de S3 manualmente (AWS SDK v3)
+      if (req.file.location) {
+        image = req.file.location;
+      } else if (req.file.key && process.env.AWS_S3_BUCKET_NAME) {
+        // Construir URL de S3 manualmente para AWS SDK v3
+        const region = process.env.AWS_REGION || 'us-east-1';
+        const bucket = process.env.AWS_S3_BUCKET_NAME;
+        image = `https://${bucket}.s3.${region}.amazonaws.com/${req.file.key}`;
+      } else {
+        // Almacenamiento local
+        image = `/uploads/${req.file.filename}`;
+      }
+      
+      console.log('📸 Imagen guardada:', {
+        hasLocation: !!req.file.location,
+        hasKey: !!req.file.key,
+        location: req.file.location,
+        key: req.file.key,
+        filename: req.file.filename,
+        bucket: process.env.AWS_S3_BUCKET_NAME,
+        region: process.env.AWS_REGION,
+        finalImage: image,
+        storageType: req.file.location || req.file.key ? 'S3' : 'Local',
+        fileObject: JSON.stringify(req.file, null, 2)
+      });
+    } else {
+      console.log('⚠️  No se recibió archivo de imagen para el producto:', name);
     }
     
     const product = new Product({ name, description, price, pages, category, image });
     await product.save();
+    console.log('✅ Producto creado:', { id: product._id, name: product.name, image: product.image });
     res.status(201).json(product);
   } catch (error) {
     console.error('Error al crear producto:', error);
@@ -65,6 +92,17 @@ exports.getProducts = async (req, res) => {
     
     const total = await Product.countDocuments(filter);
     const products = await Product.find(filter).skip(skip).limit(limit);
+    
+    // Log para debug: verificar imágenes de productos
+    products.forEach((product, index) => {
+      console.log(`Producto ${index + 1}:`, {
+        id: product._id,
+        name: product.name,
+        image: product.image || '(vacía)',
+        hasImage: !!product.image,
+        imageType: product.image ? (product.image.startsWith('http') ? 'URL completa' : 'Ruta relativa') : 'Sin imagen'
+      });
+    });
     
     console.log(`Encontrados ${total} productos, mostrando ${products.length} en página ${page}`);
     
@@ -119,11 +157,38 @@ exports.updateProduct = async (req, res) => {
     
     // Determinar la URL de la imagen según el tipo de almacenamiento
     if (req.file) {
-      // Si req.file.location existe, es S3; si no, es almacenamiento local
-      update.image = req.file.location || `/uploads/${req.file.filename}`;
+      // Si req.file.location existe, es S3 (multer-s3 con AWS SDK v2)
+      // Si req.file.key existe pero no location, construir URL de S3 manualmente (AWS SDK v3)
+      if (req.file.location) {
+        update.image = req.file.location;
+      } else if (req.file.key && process.env.AWS_S3_BUCKET_NAME) {
+        // Construir URL de S3 manualmente para AWS SDK v3
+        const region = process.env.AWS_REGION || 'us-east-1';
+        const bucket = process.env.AWS_S3_BUCKET_NAME;
+        update.image = `https://${bucket}.s3.${region}.amazonaws.com/${req.file.key}`;
+      } else {
+        // Almacenamiento local
+        update.image = `/uploads/${req.file.filename}`;
+      }
+      
+      console.log('📸 Imagen actualizada:', {
+        hasLocation: !!req.file.location,
+        hasKey: !!req.file.key,
+        location: req.file.location,
+        key: req.file.key,
+        filename: req.file.filename,
+        bucket: process.env.AWS_S3_BUCKET_NAME,
+        region: process.env.AWS_REGION,
+        finalImage: update.image,
+        storageType: req.file.location || req.file.key ? 'S3' : 'Local',
+        fileObject: JSON.stringify(req.file, null, 2)
+      });
+    } else {
+      console.log('ℹ️  No se actualizó la imagen (mantiene la existente)');
     }
     
     const product = await Product.findByIdAndUpdate(req.params.id, update, { new: true });
+    console.log('✅ Producto actualizado:', { id: product._id, name: product.name, image: product.image });
     res.json(product);
   } catch (error) {
     console.error('Error al actualizar producto:', error);

@@ -51,7 +51,7 @@ exports.login = async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ msg: 'El email o la contraseña son incorrectos.' });
     }
-    const payload = { user: { id: user.id, isAdmin: user.isAdmin, nombre: user.nombre, email: user.email } };
+    const payload = { user: { id: user.id, isAdmin: user.isAdmin, role: user.role || (user.isAdmin ? 'admin' : 'empleado'), nombre: user.nombre, email: user.email } };
     jwt.sign(
       payload,
       process.env.JWT_SECRET,
@@ -82,7 +82,8 @@ exports.createAdmin = async (req, res) => {
       email: 'dzurbrigkimprenta@gmail.com',
       password: 'AdministracionImprenta2025',
       carrera: 'Administración',
-      isAdmin: true
+      isAdmin: true,
+      role: 'admin'
     });
 
     const salt = await bcrypt.genSalt(10);
@@ -93,6 +94,46 @@ exports.createAdmin = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).send('Error en el servidor');
+  }
+};
+
+// Crear usuario empleado local
+exports.createEmpleadoLocal = async (req, res) => {
+  try {
+    const email = 'empleadolocal@gmail.com';
+    const password = 'localimpresioneslowcost';
+    
+    // Verificar si ya existe
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      // Si existe, actualizar la contraseña y el role
+      const salt = await bcrypt.genSalt(10);
+      existingUser.password = await bcrypt.hash(password, salt);
+      existingUser.role = 'empleado';
+      existingUser.isAdmin = true; // Mantener acceso al panel
+      await existingUser.save();
+      return res.json({ msg: 'Usuario empleado local actualizado exitosamente' });
+    }
+
+    // Crear nuevo usuario empleado
+    const empleadoUser = new User({
+      nombre: 'Empleado Local',
+      email: email,
+      password: password,
+      carrera: 'Empleado',
+      telefono: '0000000000',
+      isAdmin: true, // Mantener isAdmin para acceso al panel
+      role: 'empleado' // Pero con rol de empleado para restricciones
+    });
+
+    const salt = await bcrypt.genSalt(10);
+    empleadoUser.password = await bcrypt.hash(password, salt);
+    await empleadoUser.save();
+
+    res.json({ msg: 'Usuario empleado local creado exitosamente' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: 'Error al crear usuario empleado local' });
   }
 };
 
