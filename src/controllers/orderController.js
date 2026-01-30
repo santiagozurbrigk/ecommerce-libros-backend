@@ -270,16 +270,20 @@ exports.getOrderStats = async (req, res) => {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const allOrders = await Order.find();
-    const totalFacturacion = allOrders.reduce((acc, o) => acc + o.total, 0);
+    
+    // Filtrar pedidos entregados para los cálculos de facturación
+    const ordersSinEntregados = allOrders.filter(o => o.status !== 'entregado');
+    
+    const totalFacturacion = ordersSinEntregados.reduce((acc, o) => acc + o.total, 0);
     const pedidosPorEstado = allOrders.reduce((acc, o) => {
       acc[o.status] = (acc[o.status] || 0) + 1;
       return acc;
     }, {});
     const pedidosTotales = allOrders.length;
 
-    const diaria = allOrders.filter(o => o.createdAt >= startOfDay).reduce((acc, o) => acc + o.total, 0);
-    const semanal = allOrders.filter(o => o.createdAt >= startOfWeek).reduce((acc, o) => acc + o.total, 0);
-    const mensual = allOrders.filter(o => o.createdAt >= startOfMonth).reduce((acc, o) => acc + o.total, 0);
+    const diaria = ordersSinEntregados.filter(o => o.createdAt >= startOfDay).reduce((acc, o) => acc + o.total, 0);
+    const semanal = ordersSinEntregados.filter(o => o.createdAt >= startOfWeek).reduce((acc, o) => acc + o.total, 0);
+    const mensual = ordersSinEntregados.filter(o => o.createdAt >= startOfMonth).reduce((acc, o) => acc + o.total, 0);
 
     const recientes = await Order.find().sort({ createdAt: -1 }).limit(5)
       .populate('user', 'nombre email')
@@ -316,7 +320,10 @@ exports.getSalesByMonth = async (req, res) => {
       months.map(async ({ year, month, label }) => {
         const start = new Date(year, month, 1);
         const end = new Date(year, month + 1, 1);
-        const orders = await Order.find({ createdAt: { $gte: start, $lt: end } });
+        const orders = await Order.find({ 
+          createdAt: { $gte: start, $lt: end },
+          status: { $ne: 'entregado' } // Excluir pedidos entregados
+        });
         const total = orders.reduce((acc, o) => acc + o.total, 0);
         return { label, total };
       })
