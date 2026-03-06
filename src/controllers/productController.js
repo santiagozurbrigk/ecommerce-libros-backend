@@ -51,35 +51,70 @@ exports.createProduct = async (req, res) => {
 // Listar productos (con paginación para el frontend)
 exports.getProducts = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 12;
+    // Log de request completo para debugging
+    console.log('GET /api/productos - Request recibido:', {
+      query: req.query,
+      headers: {
+        'user-agent': req.headers['user-agent'],
+        'content-type': req.headers['content-type'],
+        origin: req.headers.origin
+      },
+      ip: req.ip
+    });
+    
+    // Validar y parsear parámetros de query
+    let page = parseInt(req.query.page);
+    let limit = parseInt(req.query.limit);
+    
+    // Validar que page y limit sean números válidos
+    if (isNaN(page) || page < 1) {
+      page = 1;
+    }
+    if (isNaN(limit) || limit < 1 || limit > 100) {
+      limit = 12;
+    }
+    
     const skip = (page - 1) * limit;
     const filter = {};
     
+    // Validar categoría si existe
     const hasCategory = req.query.category;
-    const hasSearch = req.query.search && req.query.search.trim();
-    
-    // Si hay búsqueda Y categoría, usar $and explícitamente
-    if (hasCategory && hasSearch) {
-      const searchTerm = req.query.search.trim();
-      filter.$and = [
-        { category: req.query.category },
-        {
-          $or: [
-            { name: { $regex: searchTerm, $options: 'i' } },
-            { description: { $regex: searchTerm, $options: 'i' } }
-          ]
-        }
-      ];
-    } else {
-      // Si solo hay categoría
-      if (hasCategory) {
-        filter.category = req.query.category;
+    if (hasCategory) {
+      // Normalizar categoría (trim y lowercase)
+      const category = String(req.query.category).trim().toLowerCase();
+      if (!['escolares', 'ingles'].includes(category)) {
+        console.warn('Categoría inválida recibida:', req.query.category);
+        return res.status(400).json({ 
+          msg: 'Categoría inválida. Debe ser "escolares" o "ingles"',
+          received: req.query.category
+        });
       }
-      
-      // Si solo hay búsqueda
-      if (hasSearch) {
-        const searchTerm = req.query.search.trim();
+      filter.category = category;
+    }
+    
+    // Validar búsqueda si existe
+    const hasSearch = req.query.search && typeof req.query.search === 'string' && req.query.search.trim();
+    if (hasSearch) {
+      const searchTerm = req.query.search.trim();
+      if (searchTerm.length > 200) {
+        return res.status(400).json({ 
+          msg: 'El término de búsqueda es demasiado largo (máximo 200 caracteres)' 
+        });
+      }
+      // Si ya hay categoría, usar $and; si no, usar $or directamente
+      if (hasCategory) {
+        filter.$and = [
+          { category: filter.category },
+          {
+            $or: [
+              { name: { $regex: searchTerm, $options: 'i' } },
+              { description: { $regex: searchTerm, $options: 'i' } }
+            ]
+          }
+        ];
+        // Remover category del nivel superior ya que está en $and
+        delete filter.category;
+      } else {
         filter.$or = [
           { name: { $regex: searchTerm, $options: 'i' } },
           { description: { $regex: searchTerm, $options: 'i' } }
@@ -87,28 +122,23 @@ exports.getProducts = async (req, res) => {
       }
     }
     
-    console.log('Query params:', { category: req.query.category, search: req.query.search, page, limit });
+    console.log('Query params procesados:', { category: req.query.category, search: req.query.search, page, limit });
     console.log('Filter aplicado:', JSON.stringify(filter, null, 2));
     
     const total = await Product.countDocuments(filter);
     const products = await Product.find(filter).skip(skip).limit(limit);
     
-    // Log para debug: verificar imágenes de productos
-    products.forEach((product, index) => {
-      console.log(`Producto ${index + 1}:`, {
-        id: product._id,
-        name: product.name,
-        image: product.image || '(vacía)',
-        hasImage: !!product.image,
-        imageType: product.image ? (product.image.startsWith('http') ? 'URL completa' : 'Ruta relativa') : 'Sin imagen'
-      });
-    });
-    
-    console.log(`Encontrados ${total} productos, mostrando ${products.length} en página ${page}`);
+    console.log(`✅ Encontrados ${total} productos, mostrando ${products.length} en página ${page}`);
     
     res.json({ products, total });
   } catch (error) {
-    console.error('Error al obtener productos:', error);
+    console.error('❌ Error al obtener productos:', error);
+    console.error('Stack trace:', error.stack);
+    console.error('Request que causó el error:', {
+      query: req.query,
+      method: req.method,
+      url: req.url
+    });
     res.status(500).json({ msg: 'No se pudieron obtener los productos. Intenta nuevamente o contacta soporte.' });
   }
 };
