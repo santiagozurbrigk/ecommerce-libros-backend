@@ -57,11 +57,25 @@ const validateProduct = [
     .withMessage('La descripción debe tener entre 10 y 1000 caracteres'),
   
   body('price')
-    .isFloat({ min: 0 })
+    .custom((value) => {
+      // Aceptar tanto números como strings que representen números
+      const numValue = typeof value === 'string' ? parseFloat(value) : value;
+      if (isNaN(numValue) || numValue < 0) {
+        throw new Error('El precio debe ser un número positivo');
+      }
+      return true;
+    })
     .withMessage('El precio debe ser un número positivo'),
   
   body('pages')
-    .isInt({ min: 1 })
+    .custom((value) => {
+      // Aceptar tanto números como strings que representen números enteros
+      const numValue = typeof value === 'string' ? parseInt(value, 10) : value;
+      if (isNaN(numValue) || numValue < 1 || !Number.isInteger(numValue)) {
+        throw new Error('Las páginas deben ser un número entero positivo');
+      }
+      return true;
+    })
     .withMessage('Las páginas deben ser un número entero positivo'),
   
   body('category')
