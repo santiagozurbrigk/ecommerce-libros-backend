@@ -115,6 +115,11 @@ const sanitizeInput = (req, res, next) => {
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    console.warn(`[handleValidationErrors] ❌ Errores de validación en ${req.method} ${req.path}:`, {
+      errors: errors.array(),
+      body: req.body,
+      query: req.query
+    });
     return res.status(400).json({
       error: 'Datos de entrada inválidos',
       details: errors.array().map(err => ({
@@ -124,6 +129,7 @@ const handleValidationErrors = (req, res, next) => {
       }))
     });
   }
+  console.log(`[handleValidationErrors] ✅ Validación exitosa para ${req.method} ${req.path}`);
   next();
 };
 

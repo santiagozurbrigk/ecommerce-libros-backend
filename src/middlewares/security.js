@@ -87,18 +87,39 @@ const configureHPP = () => {
 const validateContentType = (req, res, next) => {
   if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
     const contentType = req.headers['content-type'];
+    
+    // Log para debugging
+    console.log(`[validateContentType] ${req.method} ${req.path} - Content-Type: ${contentType || '(no especificado)'}`);
+    
     if (!contentType) {
+      console.warn(`[validateContentType] ❌ Content-Type faltante para ${req.method} ${req.path}`);
       return res.status(400).json({
-        error: 'Content-Type es requerido'
+        error: 'Content-Type es requerido',
+        received: null,
+        expected: 'application/json o multipart/form-data'
       });
     }
     
+    // Normalizar el Content-Type (puede incluir boundary para multipart)
+    const normalizedContentType = contentType.toLowerCase().split(';')[0].trim();
+    const isJson = normalizedContentType === 'application/json';
+    const isMultipart = normalizedContentType === 'multipart/form-data';
+    
     // Permitir application/json y multipart/form-data
-    if (!contentType.includes('application/json') && !contentType.includes('multipart/form-data')) {
+    if (!isJson && !isMultipart) {
+      console.warn(`[validateContentType] ❌ Content-Type inválido para ${req.method} ${req.path}:`, {
+        received: contentType,
+        normalized: normalizedContentType,
+        expected: ['application/json', 'multipart/form-data']
+      });
       return res.status(400).json({
-        error: 'Content-Type debe ser application/json o multipart/form-data'
+        error: 'Content-Type debe ser application/json o multipart/form-data',
+        received: contentType,
+        expected: 'application/json o multipart/form-data'
       });
     }
+    
+    console.log(`[validateContentType] ✅ Content-Type válido: ${normalizedContentType}`);
   }
   next();
 };

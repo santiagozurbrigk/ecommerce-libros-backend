@@ -3,7 +3,38 @@ const Product = require('../models/Product');
 // Crear producto
 exports.createProduct = async (req, res) => {
   try {
+    console.log('[createProduct] Request recibida:', {
+      method: req.method,
+      path: req.path,
+      body: req.body,
+      hasFile: !!req.file,
+      fileInfo: req.file ? {
+        fieldname: req.file.fieldname,
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size
+      } : null,
+      headers: {
+        'content-type': req.headers['content-type'],
+        authorization: req.headers['authorization'] ? 'present' : 'missing'
+      }
+    });
+    
     const { name, description, price, pages, category } = req.body;
+    
+    // Validar que los campos requeridos estén presentes
+    if (!name || !description || price === undefined || !pages || !category) {
+      console.warn('[createProduct] ❌ Campos faltantes:', {
+        name: !!name,
+        description: !!description,
+        price: price !== undefined,
+        pages: !!pages,
+        category: !!category
+      });
+      return res.status(400).json({
+        msg: 'Faltan campos requeridos: name, description, price, pages, category'
+      });
+    }
     
     // Determinar la URL de la imagen según el tipo de almacenamiento
     let image = '';
